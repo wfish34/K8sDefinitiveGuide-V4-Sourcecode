@@ -13,16 +13,12 @@ spec:
   containers:
     - name: test-container
       image: busybox
-      imagePullPolicy: Never
-      command: ["sh", "-c"]
-      args:
-      - while true; do
-          if [[ -e /etc/labels ]]; then
-            echo -en '\n\n'; cat /etc/labels; fi;
-          if [[ -e /etc/annotations ]]; then
-            echo -en '\n\n'; cat /etc/annotations; fi;
-          sleep 3600;
-        done;
+      imagePullPolicy: Always
+      command: 
+      - cat 
+      - /etc/labels
+      - sleep 
+      - "3600"
       volumeMounts:
         - name: podinfo
           mountPath: /etc

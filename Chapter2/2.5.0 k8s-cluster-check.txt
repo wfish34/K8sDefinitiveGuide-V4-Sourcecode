@@ -1,0 +1,28 @@
+/opt/k8s/bin/etcdctl --ca-file=/opt/k8s/ssl/etcd-ca.pem --cert-file=/opt/k8s/ssl/etcd-server.pem --key-file=/opt/k8s/ssl/etcd-server-key.pem --endpoints="https://172.16.31.21:2379,https://172.16.31.22:2379,https://172.16.31.23:2379" cluster-health
+
+
+kube-apiserver --logtostderr=false --v=7 --etcd-servers=https://172.16.31.21:2379,https://172.16.31.22:2379,https://172.16.31.23:2379  --bind-address=172.16.31.21 --secure-port=6443 --advertise-address=172.16.31.21 --allow-privileged=true --service-cluster-ip-range=10.254.0.0/16 --enable-admission-plugins=NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota --authorization-mode=RBAC,Node --enable-bootstrap-token-auth --token-auth-file=/opt/k8s/cfg/token.csv --service-node-port-range=30000-50000 --tls-cert-file=/opt/k8s/ssl/k8s-server.pem  --tls-private-key-file=/opt/k8s/ssl/k8s-server-key.pem --client-ca-file=/opt/k8s/ssl/k8s-ca.pem --service-account-key-file=/opt/k8s/ssl/k8s-ca-key.pem --etcd-cafile=/opt/k8s/ssl/etcd-ca.pem --etcd-certfile=/opt/k8s/ssl/etcd-server.pem --etcd-keyfile=/opt/k8s/ssl/etcd-server-key.pem --log-dir=/var/log/kube-apiserver
+
+kube-controller-manager --logtostderr=true --v=4 --master=127.0.0.1:8080 --leader-elect=true --address=127.0.0.1 --service-cluster-ip-range=10.254.0.0/16 --cluster-name=kubernetes --cluster-signing-cert-file=/opt/k8s/ssl/k8s-ca.pem --cluster-signing-key-file=/opt/k8s/ssl/k8s-ca-key.pem  --root-ca-file=/opt/k8s/ssl/k8s-ca.pem --service-account-private-key-file=/opt/k8s/ssl/k8s-ca-key.pem
+
+kube-scheduler --logtostderr=true --v=4 --master=127.0.0.1:8080 --leader-elect
+
+kubelet --logtostderr=true --v=4 --hostname-override=node01 --kubeconfig=/opt/k8s/cfg/kubelet.kubeconfig --bootstrap-kubeconfig=/opt/k8s/cfg/bootstrap.kubeconfig --config=/opt/k8s/cfg/kubelet.config --cert-dir=/opt/k8s/ssl --pod-infra-container-image=registry.cn-hangzhou.aliyuncs.com/google-containers/pause-amd64:3.0
+
+
+cat > k8s-node-service.sh <<-EOF
+systemctl daemon-reload
+systemctl stop docker
+systemctl enable kubelet
+systemctl enable kube-proxy
+systemctl enable flanneld
+systemctl start flanneld
+systemctl start docker
+systemctl start kube-proxy
+systemctl start kubelet
+
+EOF
+
+
+
+/opt/k8s/bin/etcdctl --ca-file=/opt/k8s/ssl/etcd-ca.pem --cert-file=/opt/k8s/ssl/etcd-server.pem --key-file=/opt/k8s/ssl/etcd-server-key.pem --endpoints="https://172.16.31.21:2379,https://172.16.31.22:2379,https://172.16.31.23:2379"  set /opt/k8s/network/config  '{ "Network": "10.254.0.0/16", "Backend": {"Type": "vxlan"}}'

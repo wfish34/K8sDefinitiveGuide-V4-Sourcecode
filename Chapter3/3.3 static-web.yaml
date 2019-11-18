@@ -11,4 +11,8 @@ spec:
     ports:
     - name: web
       containerPort: 80
+    resources:
+      limits:
+        memory: 128Mi
+        cpu: 64m
 
